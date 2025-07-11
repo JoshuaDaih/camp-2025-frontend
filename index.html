@@ -107,7 +107,8 @@
         }
 
         .btn:active {
-            transform: translateY(0);
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(90, 103, 216, 0.15);
         }
 
         .btn-small {
@@ -157,6 +158,27 @@
             border: 1px solid #e2e8f0;
             transition: all 0.3s ease;
             position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .todo-item.removing {
+            animation: fadeOutDown 0.4s forwards;
+        }
+
+        @keyframes fadeOutDown {
+            to {
+                opacity: 0;
+                transform: translateY(40px);
+            }
         }
 
         .todo-item:hover {
@@ -236,6 +258,13 @@
             color: #a0aec0;
             font-size: 18px;
             padding: 40px;
+            animation: bounceIn 0.7s;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
         }
 
         .loading {
@@ -243,27 +272,45 @@
             color: #5a67d8;
             font-size: 16px;
             padding: 20px;
+            animation: pulse 1.2s infinite;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .form-row {
-                flex-direction: column;
-            }
-            
-            .todo-actions {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .btn-small {
-                width: 100%;
-                margin: 2px 0;
-            }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* 按鈕互動效果 */
+        .btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(90, 103, 216, 0.15);
+        }
+
+        /* hover 標題顏色 */
+        .todo-item:hover .todo-title {
+            color: #5a67d8;
+            text-shadow: 0 2px 8px #c3dafe44;
+        }
+
+        /* 美化 placeholder */
+        input::placeholder, textarea::placeholder {
+            color: #b3b3b3;
+            opacity: 1;
+            font-style: italic;
+        }
+
+        /* icon 按鈕 */
+        .btn svg {
+            vertical-align: middle;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        /* 響應式細節 */
+        @media (max-width: 400px) {
+            h1 { font-size: 1.5em; }
+            .container { padding: 10px; }
         }
     </style>
 </head>
@@ -307,7 +354,7 @@
     </div>
 
     <script>
-        const API_URL = "http://localhost:8000";
+        const API_URL = "https://camp-2025-backend-257033024365.asia-east1.run.app/";
         
         window.onload = function() {
             getData();
@@ -315,19 +362,17 @@
         
         async function getData() {
             try {
-                document.getElementById("result").innerHTML = '<div class="loading">載入中...</div>';
+                document.getElementById("result").innerHTML = '<div class="loading">⏳ 載入中...</div>';
                 const response = await fetch(`${API_URL}/todos`);
                 const data = await response.json();
-                
                 if (data.length === 0) {
-                    document.getElementById("result").innerHTML = '<div class="empty-state">目前沒有待辦事項，快新增一個吧！</div>';
+                    document.getElementById("result").innerHTML = '<div class="empty-state">🌱 目前沒有待辦事項，快新增一個吧！</div>';
                     return;
                 }
-                
                 let html = "";
                 data.forEach((todo, index) => {
                     html += `
-                        <div class="todo-item ${todo.completed ? 'completed' : ''}">
+                        <div class="todo-item ${todo.completed ? 'completed' : ''}" id="todo-${index}">
                             ${todo.completed ? '<div class="completed-badge">✓</div>' : ''}
                             <div class="todo-header">
                                 <h3 class="todo-title">${escapeHtml(todo.title)}</h3>
@@ -336,17 +381,17 @@
                             ${todo.description ? `<div class="todo-description">${escapeHtml(todo.description)}</div>` : ''}
                             <div class="todo-actions">
                                 <button class="btn btn-small btn-edit" onclick="toggleComplete(${index}, ${todo.completed})">
-                                    ${todo.completed ? '取消完成' : '標記完成'}
+                                    ${todo.completed ? '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>取消完成' : '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>標記完成'}
                                 </button>
-                                <button class="btn btn-small btn-edit" onclick="editTodo(${index})">編輯</button>
-                                <button class="btn btn-small btn-delete" onclick="deleteTodo(${index})">刪除</button>
+                                <button class="btn btn-small btn-edit" onclick="editTodo(${index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536M9 13l6-6 3 3-6 6H9v-3z"/></svg>編輯</button>
+                                <button class="btn btn-small btn-delete" onclick="deleteTodo(${index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M9 6v12a2 2 0 002 2h2a2 2 0 002-2V6"/></svg>刪除</button>
                             </div>
                         </div>
                     `;
                 });
                 document.getElementById("result").innerHTML = html;
             } catch (error) {
-                document.getElementById("result").innerHTML = '<div class="empty-state">載入失敗，請檢查後端服務是否運行</div>';
+                document.getElementById("result").innerHTML = '<div class="empty-state">❌ 載入失敗，請檢查後端服務是否運行</div>';
                 console.error('Error fetching todos:', error);
             }
         }
@@ -465,27 +510,35 @@
         
         async function deleteTodo(index) {
             if (confirm("確定要刪除這個待辦事項嗎？")) {
-                try {
-                    const response = await fetch(`${API_URL}/todo/${index}`, {
-                        method: "DELETE",
-                    });
-                    
-                    if (response.ok) {
-                        await getData();
-                    } else {
-                        alert("刪除失敗，請稍後再試");
-                    }
-                } catch (error) {
-                    alert("刪除失敗，請檢查網路連線");
-                    console.error('Error deleting todo:', error);
+                const todoElem = document.getElementById(`todo-${index}`);
+                if (todoElem) {
+                    todoElem.classList.add('removing');
+                    setTimeout(() => actuallyDeleteTodo(index), 350);
+                } else {
+                    actuallyDeleteTodo(index);
                 }
             }
         }
+        async function actuallyDeleteTodo(index) {
+            try {
+                const response = await fetch(`${API_URL}/todo/${index}`, {
+                    method: "DELETE",
+                });
+                if (response.ok) {
+                    await getData();
+                } else {
+                    alert("刪除失敗，請稍後再試");
+                }
+            } catch (error) {
+                alert("刪除失敗，請檢查網路連線");
+                console.error('Error deleting todo:', error);
+            }
+        }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function escapeHtml(html) {
+            const text = document.createElement('textarea');
+            text.innerHTML = html;
+            return text.value;
         }
     </script>
 </body>
